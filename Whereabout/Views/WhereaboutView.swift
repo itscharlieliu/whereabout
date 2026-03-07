@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 import MapKit
 
-struct TimelineView: View {
+struct WhereaboutView: View {
     let selectedDate: Date
 
     @Query private var dayLocations: [LocationRecord]
@@ -43,7 +43,7 @@ struct TimelineView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Map section
-            TimelineMapView(locations: dayLocations, visits: dayVisits)
+            WhereaboutMapView(locations: dayLocations, visits: dayVisits)
                 .frame(height: 300)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal)

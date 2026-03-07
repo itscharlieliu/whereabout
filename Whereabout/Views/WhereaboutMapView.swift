@@ -1,7 +1,7 @@
 import SwiftUI
 import MapKit
 
-struct TimelineMapView: View {
+struct WhereaboutMapView: View {
     let locations: [LocationRecord]
     let visits: [VisitRecord]
 
@@ -62,8 +62,8 @@ struct TimelineMapView: View {
     }
 }
 
-struct TimelineMapView_Previews: PreviewProvider {
+struct WhereaboutMapView_Previews: PreviewProvider {
     static var previews: some View {
-        TimelineMapView(locations: [], visits: [])
+        WhereaboutMapView(locations: [], visits: [])
     }
 }

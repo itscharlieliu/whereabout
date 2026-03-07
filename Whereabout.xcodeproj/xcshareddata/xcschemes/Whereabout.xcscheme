@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "E1B2C3D400000000000000F0"
-               BuildableName = "Timeline.app"
-               BlueprintName = "Timeline"
-               ReferencedContainer = "container:Timeline.xcodeproj">
+               BuildableName = "Whereabout.app"
+               BlueprintName = "Whereabout"
+               ReferencedContainer = "container:Whereabout.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -46,9 +46,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E1B2C3D400000000000000F0"
-            BuildableName = "Timeline.app"
-            BlueprintName = "Timeline"
-            ReferencedContainer = "container:Timeline.xcodeproj">
+            BuildableName = "Whereabout.app"
+            BlueprintName = "Whereabout"
+            ReferencedContainer = "container:Whereabout.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -64,9 +64,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E1B2C3D400000000000000F0"
-            BuildableName = "Timeline.app"
-            BlueprintName = "Timeline"
-            ReferencedContainer = "container:Timeline.xcodeproj">
+            BuildableName = "Whereabout.app"
+            BlueprintName = "Whereabout"
+            ReferencedContainer = "container:Whereabout.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

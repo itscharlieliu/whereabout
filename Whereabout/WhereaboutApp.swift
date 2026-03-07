@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct TimelineApp: App {
+struct WhereaboutApp: App {
     let modelContainer: ModelContainer
 
     init() {
