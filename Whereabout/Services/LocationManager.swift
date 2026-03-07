@@ -17,10 +17,6 @@ final class LocationManager: NSObject, ObservableObject {
         super.init()
         clManager.delegate = self
         clManager.allowsBackgroundLocationUpdates = true
-        clManager.pausesLocationUpdatesAutomatically = true
-        clManager.showsBackgroundLocationIndicator = true
-        clManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
-        clManager.distanceFilter = 25
         authorizationStatus = clManager.authorizationStatus
     }
 
@@ -34,14 +30,14 @@ final class LocationManager: NSObject, ObservableObject {
             requestPermission()
             return
         }
-        clManager.startUpdatingLocation()
+        // Use significant location changes for occasional background updates (~500m movement)
         clManager.startMonitoringSignificantLocationChanges()
+        // Visit monitoring detects when user stays at a place
         clManager.startMonitoringVisits()
         isTracking = true
     }
 
     func stopTracking() {
-        clManager.stopUpdatingLocation()
         clManager.stopMonitoringSignificantLocationChanges()
         clManager.stopMonitoringVisits()
         isTracking = false

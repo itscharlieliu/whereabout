@@ -8,22 +8,22 @@ This is an iOS app built with Xcode. Use the following commands:
 
 ```bash
 # Build for simulator
-xcodebuild -project Timeline.xcodeproj -scheme Timeline -sdk iphonesimulator -configuration Debug build
+xcodebuild -project Whereabout.xcodeproj -scheme Whereabout -sdk iphonesimulator -configuration Debug build
 
 # Build for device
-xcodebuild -project Timeline.xcodeproj -scheme Timeline -sdk iphoneos -configuration Release build
+xcodebuild -project Whereabout.xcodeproj -scheme Whereabout -sdk iphoneos -configuration Release build
 
 # Run tests (if added)
-xcodebuild -project Timeline.xcodeproj -scheme Timeline -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15' test
+xcodebuild -project Whereabout.xcodeproj -scheme Whereabout -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15' test
 ```
 
 ## Architecture
 
-Timeline is a personal location tracking iOS app that records where the user has been throughout the day. All data is stored locally on-device using SwiftData.
+Whereabout is a personal location tracking iOS app that records where the user has been throughout the day. All data is stored locally on-device using SwiftData.
 
 ### Key Components
 
-- **TimelineApp.swift** - App entry point; initializes SwiftData ModelContainer with `LocationRecord` and `VisitRecord` schemas and configures the shared LocationManager
+- **WhereaboutApp.swift** - App entry point; initializes SwiftData ModelContainer with `LocationRecord` and `VisitRecord` schemas and configures the shared LocationManager
 - **LocationManager** (`Services/LocationManager.swift`) - Singleton that wraps CLLocationManager for background location tracking and visit monitoring. Handles permissions, saves location/visit data to SwiftData, and performs reverse geocoding for visit place names
 - **LocationModels.swift** (`Models/`) - SwiftData `@Model` classes:
   - `LocationRecord` - GPS coordinate points with timestamp, altitude, speed, accuracy
@@ -39,8 +39,8 @@ Timeline is a personal location tracking iOS app that records where the user has
 ### Views
 
 - **ContentView** - Main navigation with date picker, settings sheet, and tracking controls
-- **TimelineView** - Day view showing map + timeline list of visits/travel segments with stats (distance, places, points)
-- **TimelineMapView** - MapKit view displaying route polyline and visit annotations
+- **WhereaboutView** - Day view showing map + timeline list of visits/travel segments with stats (distance, places, points)
+- **WhereaboutMapView** - MapKit view displaying route polyline and visit annotations
 
 ## Requirements
 

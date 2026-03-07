@@ -17,10 +17,10 @@ struct ContentView: View {
 
                 Divider()
 
-                // Timeline content
-                TimelineView(selectedDate: selectedDate)
+                // Whereabout content
+                WhereaboutView(selectedDate: selectedDate)
             }
-            .navigationTitle("Timeline")
+            .navigationTitle("Whereabout")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -228,7 +228,7 @@ struct ContentView: View {
                 } header: {
                     Text("About")
                 } footer: {
-                    Text("Timeline tracks your location throughout the day so you can revisit where you've been. All data stays on your device.")
+                    Text("Whereabout tracks your location throughout the day so you can revisit where you've been. All data stays on your device.")
                 }
             }
             .navigationTitle("Settings")
