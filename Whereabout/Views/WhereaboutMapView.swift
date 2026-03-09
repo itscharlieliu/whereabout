@@ -5,14 +5,20 @@ struct WhereaboutMapView: View {
     let locations: [LocationRecord]
     let visits: [VisitRecord]
     var selectedVisit: VisitRecord? = nil
+    var priorLocation: LocationRecord? = nil
 
     @State private var position: MapCameraPosition = .automatic
 
     var body: some View {
         Map(position: $position) {
-            // Draw route polyline
-            if locations.count >= 2 {
-                MapPolyline(coordinates: locations.map { $0.coordinate })
+            // Draw route polyline, anchored to previous day's last location if available
+            let polylineCoords: [CLLocationCoordinate2D] = {
+                var coords = locations.map { $0.coordinate }
+                if let prior = priorLocation { coords.insert(prior.coordinate, at: 0) }
+                return coords
+            }()
+            if polylineCoords.count >= 2 {
+                MapPolyline(coordinates: polylineCoords)
                     .stroke(.blue, lineWidth: 3)
             }
 
