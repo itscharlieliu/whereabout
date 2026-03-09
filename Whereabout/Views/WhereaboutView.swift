@@ -48,6 +48,42 @@ struct WhereaboutView: View {
         _priorLocation = Query(priorDescriptor)
     }
 
+    private let minVisitDuration: TimeInterval = 5 * 60
+
+    // Effective departure for a visit: real departure, or earliest of next-visit arrival
+    // and first location recorded after the visit started (whichever comes first).
+    private func effectiveDeparture(for visit: VisitRecord, nextArrival: Date?) -> Date? {
+        if !visit.isOngoing { return visit.departureDate }
+        let firstLocationAfter = dayLocations.first { $0.timestamp > visit.arrivalDate }?.timestamp
+        return [nextArrival, firstLocationAfter].compactMap { $0 }.min()
+    }
+
+    // Deduplicate visits with the same arrivalDate, keeping the one with a real departure.
+    private var deduplicatedDayVisits: [VisitRecord] {
+        var best: [Date: VisitRecord] = [:]
+        for visit in dayVisits {
+            if let existing = best[visit.arrivalDate] {
+                if existing.isOngoing && !visit.isOngoing {
+                    best[visit.arrivalDate] = visit
+                }
+            } else {
+                best[visit.arrivalDate] = visit
+            }
+        }
+        return dayVisits.filter { best[$0.arrivalDate]?.persistentModelID == $0.persistentModelID }
+    }
+
+    // deduplicatedDayVisits filtered to >= 5 min, each paired with its effective departure.
+    private var filteredDayVisits: [(visit: VisitRecord, effectiveDeparture: Date?)] {
+        deduplicatedDayVisits.enumerated().compactMap { i, visit in
+            let nextArrival = i + 1 < deduplicatedDayVisits.count ? deduplicatedDayVisits[i + 1].arrivalDate : nil
+            let dep = effectiveDeparture(for: visit, nextArrival: nextArrival)
+            let duration = (dep ?? Date.now).timeIntervalSince(visit.arrivalDate)
+            guard duration >= minVisitDuration else { return nil }
+            return (visit, dep)
+        }
+    }
+
     private var totalDistance: Double {
         guard dayLocations.count >= 2 else { return 0 }
         var distance: Double = 0
@@ -62,7 +98,7 @@ struct WhereaboutView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Map section
-            WhereaboutMapView(locations: dayLocations, visits: dayVisits, selectedVisit: selectedVisit, priorLocation: priorLocation.first)
+            WhereaboutMapView(locations: dayLocations, visits: filteredDayVisits.map(\.visit), selectedVisit: selectedVisit, priorLocation: priorLocation.first)
                 .frame(height: 300)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal)
@@ -95,7 +131,7 @@ struct WhereaboutView: View {
             )
             StatBadge(
                 icon: "mappin.and.ellipse",
-                value: "\(dayVisits.count)",
+                value: "\(filteredDayVisits.count)",
                 label: "Places"
             )
             StatBadge(
@@ -139,15 +175,19 @@ struct WhereaboutView: View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 if let prior = priorVisit.first {
-                    let nextArrival = dayVisits.first?.arrivalDate
-                    visitRow(prior, inferredDeparture: prior.isOngoing ? nextArrival : nil)
+                    let firstTodayVisit = dayVisits.first?.arrivalDate
+                    let firstTodayLocation = dayLocations.first?.timestamp
+                    let inferredDep = prior.isOngoing
+                        ? [firstTodayVisit, firstTodayLocation].compactMap { $0 }.min()
+                        : nil
+                    visitRow(prior, inferredDeparture: inferredDep)
                         .onTapGesture { selectedVisit = prior }
                 }
 
-                ForEach(Array(dayVisits.enumerated()), id: \.element.id) { index, visit in
-                    let nextArrival = index + 1 < dayVisits.count ? dayVisits[index + 1].arrivalDate : nil
-                    visitRow(visit, inferredDeparture: visit.isOngoing ? nextArrival : nil)
-                        .onTapGesture { selectedVisit = visit }
+                ForEach(filteredDayVisits, id: \.visit.id) { item in
+                    let inferredDep = item.visit.isOngoing ? item.effectiveDeparture : nil
+                    visitRow(item.visit, inferredDeparture: inferredDep)
+                        .onTapGesture { selectedVisit = item.visit }
                 }
 
                 // If we have locations but no visits, show a simple route summary
