@@ -125,7 +125,8 @@ struct WhereaboutView: View {
                         travelSegment(from: dayVisits[index - 1], to: visit)
                     }
 
-                    visitRow(visit)
+                    let nextArrival = index + 1 < dayVisits.count ? dayVisits[index + 1].arrivalDate : nil
+                    visitRow(visit, inferredDeparture: visit.isOngoing ? nextArrival : nil)
                 }
 
                 // If we have locations but no visits, show a simple route summary
@@ -139,14 +140,26 @@ struct WhereaboutView: View {
 
     // MARK: - Visit Row
 
-    private func visitRow(_ visit: VisitRecord) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+    private func visitRow(_ visit: VisitRecord, inferredDeparture: Date? = nil) -> some View {
+        let effectiveDeparture = inferredDeparture ?? (visit.isOngoing ? nil : visit.departureDate)
+        let stillOngoing = effectiveDeparture == nil
+
+        let displayDuration: String = {
+            let end = effectiveDeparture ?? Date.now
+            let interval = end.timeIntervalSince(visit.arrivalDate)
+            let f = DateComponentsFormatter()
+            f.allowedUnits = [.hour, .minute]
+            f.unitsStyle = .abbreviated
+            return f.string(from: interval) ?? ""
+        }()
+
+        return HStack(alignment: .top, spacing: 12) {
             // Timeline indicator
             VStack(spacing: 4) {
                 Circle()
-                    .fill(visit.isOngoing ? .green : .blue)
+                    .fill(stillOngoing ? Color.green : Color.blue)
                     .frame(width: 12, height: 12)
-                if !visit.isOngoing {
+                if !stillOngoing {
                     Rectangle()
                         .fill(Color.secondary.opacity(0.3))
                         .frame(width: 2)
@@ -168,17 +181,20 @@ struct WhereaboutView: View {
                 HStack(spacing: 8) {
                     Label(visit.formattedArrival, systemImage: "arrow.right.circle")
                     Text("–")
-                    if visit.isOngoing {
+                    if stillOngoing {
                         Label("now", systemImage: "clock.fill")
                             .foregroundStyle(.green)
                     } else {
-                        Label(visit.formattedDeparture, systemImage: "arrow.left.circle")
+                        Label(
+                            effectiveDeparture!.formatted(date: .omitted, time: .shortened),
+                            systemImage: "arrow.left.circle"
+                        )
                     }
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-                Text(visit.formattedDuration)
+                Text(displayDuration)
                     .font(.caption2)
                     .fontWeight(.medium)
                     .foregroundStyle(.white)
@@ -186,7 +202,7 @@ struct WhereaboutView: View {
                     .padding(.vertical, 3)
                     .background(
                         Capsule()
-                            .fill(visit.isOngoing ? .green : .blue)
+                            .fill(stillOngoing ? Color.green : Color.blue)
                     )
             }
 
@@ -204,8 +220,8 @@ struct WhereaboutView: View {
         let distance = toLocation.distance(from: fromLocation)
 
         let travelTime: TimeInterval = {
-            let departure = from.isOngoing ? Date.now : from.departureDate
-            return to.arrivalDate.timeIntervalSince(departure)
+            guard !from.isOngoing else { return 0 }
+            return to.arrivalDate.timeIntervalSince(from.departureDate)
         }()
 
         return HStack(alignment: .center, spacing: 12) {
