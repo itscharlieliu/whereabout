@@ -113,24 +113,6 @@ final class LocationManager: NSObject, ObservableObject {
         }
     }
 
-    func cleanupOpenVisits() {
-        guard let container = modelContainer else { return }
-        let context = ModelContext(container)
-        guard let visits = try? context.fetch(
-            FetchDescriptor<VisitRecord>(sortBy: [SortDescriptor(\.arrivalDate)])
-        ) else { return }
-
-        let distantFuture = Date.distantFuture
-        var changed = false
-        for i in visits.indices where visits[i].departureDate == distantFuture {
-            if i + 1 < visits.count {
-                visits[i].departureDate = visits[i + 1].arrivalDate
-                changed = true
-            }
-        }
-        if changed { try? context.save() }
-    }
-
     private func reverseGeocode(record: VisitRecord, container: ModelContainer) {
         let location = CLLocation(latitude: record.latitude, longitude: record.longitude)
         let visitID = record.persistentModelID
