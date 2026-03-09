@@ -8,12 +8,14 @@ struct WhereaboutView: View {
     @Query private var dayLocations: [LocationRecord]
     @Query private var dayVisits: [VisitRecord]
     @Query private var priorLocation: [LocationRecord]
+    @Query private var priorVisit: [VisitRecord]
 
     @State private var selectedVisit: VisitRecord?
 
     init(selectedDate: Date) {
         self.selectedDate = selectedDate
-        let calendar = Calendar.current
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
         let startOfDay = calendar.startOfDay(for: selectedDate)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
 
@@ -26,10 +28,17 @@ struct WhereaboutView: View {
 
         _dayVisits = Query(
             filter: #Predicate<VisitRecord> { visit in
-                visit.arrivalDate < endOfDay && visit.departureDate >= startOfDay
+                visit.arrivalDate >= startOfDay && visit.arrivalDate < endOfDay
             },
             sort: \.arrivalDate
         )
+
+        var priorVisitDescriptor = FetchDescriptor<VisitRecord>(
+            predicate: #Predicate { $0.arrivalDate < startOfDay },
+            sortBy: [SortDescriptor(\.arrivalDate, order: .reverse)]
+        )
+        priorVisitDescriptor.fetchLimit = 1
+        _priorVisit = Query(priorVisitDescriptor)
 
         var priorDescriptor = FetchDescriptor<LocationRecord>(
             predicate: #Predicate { $0.timestamp < startOfDay },
@@ -129,6 +138,12 @@ struct WhereaboutView: View {
     private var timelineList: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
+                if let prior = priorVisit.first {
+                    let nextArrival = dayVisits.first?.arrivalDate
+                    visitRow(prior, inferredDeparture: prior.isOngoing ? nextArrival : nil)
+                        .onTapGesture { selectedVisit = prior }
+                }
+
                 ForEach(Array(dayVisits.enumerated()), id: \.element.id) { index, visit in
                     let nextArrival = index + 1 < dayVisits.count ? dayVisits[index + 1].arrivalDate : nil
                     visitRow(visit, inferredDeparture: visit.isOngoing ? nextArrival : nil)
