@@ -4,6 +4,7 @@ import MapKit
 struct WhereaboutMapView: View {
     let locations: [LocationRecord]
     let visits: [VisitRecord]
+    var selectedVisit: VisitRecord? = nil
 
     @State private var position: MapCameraPosition = .automatic
 
@@ -58,6 +59,16 @@ struct WhereaboutMapView: View {
             MapCompass()
             MapScaleView()
             MapUserLocationButton()
+        }
+        .onChange(of: selectedVisit?.persistentModelID) { _, _ in
+            guard let visit = selectedVisit else { return }
+            withAnimation {
+                position = .region(MKCoordinateRegion(
+                    center: visit.coordinate,
+                    latitudinalMeters: 500,
+                    longitudinalMeters: 500
+                ))
+            }
         }
     }
 }

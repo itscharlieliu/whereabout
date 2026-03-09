@@ -8,6 +8,8 @@ struct WhereaboutView: View {
     @Query private var dayLocations: [LocationRecord]
     @Query private var dayVisits: [VisitRecord]
 
+    @State private var selectedVisit: VisitRecord?
+
     init(selectedDate: Date) {
         self.selectedDate = selectedDate
         let calendar = Calendar.current
@@ -43,7 +45,7 @@ struct WhereaboutView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Map section
-            WhereaboutMapView(locations: dayLocations, visits: dayVisits)
+            WhereaboutMapView(locations: dayLocations, visits: dayVisits, selectedVisit: selectedVisit)
                 .frame(height: 300)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal)
@@ -127,6 +129,7 @@ struct WhereaboutView: View {
 
                     let nextArrival = index + 1 < dayVisits.count ? dayVisits[index + 1].arrivalDate : nil
                     visitRow(visit, inferredDeparture: visit.isOngoing ? nextArrival : nil)
+                        .onTapGesture { selectedVisit = visit }
                 }
 
                 // If we have locations but no visits, show a simple route summary
