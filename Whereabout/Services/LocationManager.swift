@@ -80,6 +80,9 @@ final class LocationManager: NSObject, ObservableObject {
             return
         }
 
+        // Arriving somewhere new: close any open visits that predate this arrival.
+        closeOpenVisits(before: visit.arrivalDate, in: context)
+
         let record = VisitRecord(
             latitude: visit.coordinate.latitude,
             longitude: visit.coordinate.longitude,
@@ -95,6 +98,37 @@ final class LocationManager: NSObject, ObservableObject {
         }
 
         reverseGeocode(record: record, container: container)
+    }
+
+    private func closeOpenVisits(before date: Date, in context: ModelContext) {
+        let distantFuture = Date.distantFuture
+        let openVisits = (try? context.fetch(FetchDescriptor<VisitRecord>(
+            predicate: #Predicate { $0.departureDate == distantFuture && $0.arrivalDate < date }
+        ))) ?? []
+        for visit in openVisits {
+            visit.departureDate = date
+        }
+        if !openVisits.isEmpty {
+            try? context.save()
+        }
+    }
+
+    func cleanupOpenVisits() {
+        guard let container = modelContainer else { return }
+        let context = ModelContext(container)
+        guard let visits = try? context.fetch(
+            FetchDescriptor<VisitRecord>(sortBy: [SortDescriptor(\.arrivalDate)])
+        ) else { return }
+
+        let distantFuture = Date.distantFuture
+        var changed = false
+        for i in visits.indices where visits[i].departureDate == distantFuture {
+            if i + 1 < visits.count {
+                visits[i].departureDate = visits[i + 1].arrivalDate
+                changed = true
+            }
+        }
+        if changed { try? context.save() }
     }
 
     private func reverseGeocode(record: VisitRecord, container: ModelContainer) {
