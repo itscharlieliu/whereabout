@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var locationManager = LocationManager.shared
@@ -8,6 +9,10 @@ struct ContentView: View {
     @State private var selectedDate = Date()
     @State private var showDatePicker = false
     @State private var showSettings = false
+    @State private var exportItem: ExportURL?
+    @State private var showImportPicker = false
+    @State private var importMessage: String?
+    @State private var showImportAlert = false
 
     var body: some View {
         NavigationStack {
@@ -207,6 +212,36 @@ struct ContentView: View {
                 }
 
                 Section {
+                    Button {
+                        do {
+                            let url = try CSVManager.shared.exportLocations(context: modelContext)
+                            exportItem = ExportURL(url: url)
+                        } catch {
+                            importMessage = "Export failed: \(error.localizedDescription)"
+                            showImportAlert = true
+                        }
+                    } label: {
+                        Label("Export Locations CSV", systemImage: "arrow.up.doc.fill")
+                    }
+
+                    Button {
+                        do {
+                            let url = try CSVManager.shared.exportVisits(context: modelContext)
+                            exportItem = ExportURL(url: url)
+                        } catch {
+                            importMessage = "Export failed: \(error.localizedDescription)"
+                            showImportAlert = true
+                        }
+                    } label: {
+                        Label("Export Visits CSV", systemImage: "arrow.up.doc.fill")
+                    }
+
+                    Button {
+                        showImportPicker = true
+                    } label: {
+                        Label("Import from CSV", systemImage: "arrow.down.doc.fill")
+                    }
+
                     Button(role: .destructive) {
                         clearAllData()
                     } label: {
@@ -241,6 +276,33 @@ struct ContentView: View {
                     .fontWeight(.semibold)
                 }
             }
+            .sheet(item: $exportItem) { item in
+                ActivityView(url: item.url)
+            }
+            .fileImporter(
+                isPresented: $showImportPicker,
+                allowedContentTypes: [.commaSeparatedText]
+            ) { result in
+                switch result {
+                case .success(let url):
+                    do {
+                        let importResult = try CSVManager.shared.importCSV(from: url, into: modelContext)
+                        let total = importResult.locations + importResult.visits
+                        importMessage = "\(total) imported, \(importResult.skipped) skipped"
+                    } catch {
+                        importMessage = "Import failed: \(error.localizedDescription)"
+                    }
+                    showImportAlert = true
+                case .failure(let error):
+                    importMessage = "Could not open file: \(error.localizedDescription)"
+                    showImportAlert = true
+                }
+            }
+            .alert("Import Result", isPresented: $showImportAlert) {
+                Button("OK") {}
+            } message: {
+                Text(importMessage ?? "")
+            }
         }
     }
 
@@ -264,6 +326,21 @@ struct ContentView: View {
             print("Failed to delete data: \(error)")
         }
     }
+}
+
+private struct ExportURL: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+private struct ActivityView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 struct ContentView_Previews: PreviewProvider {
