@@ -65,6 +65,20 @@ final class LocationManager: NSObject, ObservableObject {
     private func saveVisit(_ visit: CLVisit) {
         guard let container = modelContainer else { return }
         let context = ModelContext(container)
+
+        // If this is a departure event, update the existing record instead of inserting a duplicate.
+        let arrivalDate = visit.arrivalDate
+        let existing = try? context.fetch(
+            FetchDescriptor<VisitRecord>(
+                predicate: #Predicate { $0.arrivalDate == arrivalDate }
+            )
+        )
+        if let record = existing?.first {
+            record.departureDate = visit.departureDate
+            try? context.save()
+            return
+        }
+
         let record = VisitRecord(
             latitude: visit.coordinate.latitude,
             longitude: visit.coordinate.longitude,
