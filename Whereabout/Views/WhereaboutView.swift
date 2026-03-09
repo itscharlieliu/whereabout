@@ -7,6 +7,7 @@ struct WhereaboutView: View {
 
     @Query private var dayLocations: [LocationRecord]
     @Query private var dayVisits: [VisitRecord]
+    @Query private var priorLocation: [LocationRecord]
 
     @State private var selectedVisit: VisitRecord?
 
@@ -29,6 +30,13 @@ struct WhereaboutView: View {
             },
             sort: \.arrivalDate
         )
+
+        var priorDescriptor = FetchDescriptor<LocationRecord>(
+            predicate: #Predicate { $0.timestamp < startOfDay },
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
+        priorDescriptor.fetchLimit = 1
+        _priorLocation = Query(priorDescriptor)
     }
 
     private var totalDistance: Double {
@@ -45,7 +53,7 @@ struct WhereaboutView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Map section
-            WhereaboutMapView(locations: dayLocations, visits: dayVisits, selectedVisit: selectedVisit)
+            WhereaboutMapView(locations: dayLocations, visits: dayVisits, selectedVisit: selectedVisit, priorLocation: priorLocation.first)
                 .frame(height: 300)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal)
@@ -122,11 +130,6 @@ struct WhereaboutView: View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(Array(dayVisits.enumerated()), id: \.element.id) { index, visit in
-                    // Travel segment before visit (if not the first)
-                    if index > 0 {
-                        travelSegment(from: dayVisits[index - 1], to: visit)
-                    }
-
                     let nextArrival = index + 1 < dayVisits.count ? dayVisits[index + 1].arrivalDate : nil
                     visitRow(visit, inferredDeparture: visit.isOngoing ? nextArrival : nil)
                         .onTapGesture { selectedVisit = visit }
@@ -158,17 +161,9 @@ struct WhereaboutView: View {
 
         return HStack(alignment: .top, spacing: 12) {
             // Timeline indicator
-            VStack(spacing: 4) {
-                Circle()
-                    .fill(stillOngoing ? Color.green : Color.blue)
-                    .frame(width: 12, height: 12)
-                if !stillOngoing {
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.3))
-                        .frame(width: 2)
-                }
-            }
-            .frame(width: 12)
+            Circle()
+                .fill(stillOngoing ? Color.green : Color.blue)
+                .frame(width: 12, height: 12)
 
             // Content
             VStack(alignment: .leading, spacing: 4) {
@@ -213,58 +208,6 @@ struct WhereaboutView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
-    }
-
-    // MARK: - Travel Segment
-
-    private func travelSegment(from: VisitRecord, to: VisitRecord) -> some View {
-        let fromLocation = CLLocation(latitude: from.latitude, longitude: from.longitude)
-        let toLocation = CLLocation(latitude: to.latitude, longitude: to.longitude)
-        let distance = toLocation.distance(from: fromLocation)
-
-        let travelTime: TimeInterval = {
-            guard !from.isOngoing else { return 0 }
-            return to.arrivalDate.timeIntervalSince(from.departureDate)
-        }()
-
-        return HStack(alignment: .center, spacing: 12) {
-            VStack {
-                Rectangle()
-                    .fill(Color.secondary.opacity(0.3))
-                    .frame(width: 2, height: 30)
-            }
-            .frame(width: 12)
-
-            HStack(spacing: 6) {
-                Image(systemName: "car.fill")
-                    .font(.caption2)
-                    .foregroundStyle(.orange)
-
-                if distance >= 1000 {
-                    Text(String(format: "%.1f km", distance / 1000))
-                        .font(.caption2)
-                } else {
-                    Text(String(format: "%.0f m", distance))
-                        .font(.caption2)
-                }
-
-                if travelTime > 0 {
-                    Text("·")
-                        .font(.caption2)
-                    Text({
-                        let f = DateComponentsFormatter()
-                        f.allowedUnits = [.hour, .minute]
-                        f.unitsStyle = .abbreviated
-                        return f.string(from: travelTime) ?? ""
-                    }())
-                    .font(.caption2)
-                }
-            }
-            .foregroundStyle(.secondary)
-
-            Spacer()
-        }
-        .padding(.horizontal)
     }
 
     // MARK: - Route Summary
