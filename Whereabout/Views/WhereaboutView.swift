@@ -77,6 +77,12 @@ struct WhereaboutView: View {
     private var filteredDayVisits: [(visit: VisitRecord, effectiveDeparture: Date?)] {
         deduplicatedDayVisits.enumerated().compactMap { i, visit in
             let nextArrival = i + 1 < deduplicatedDayVisits.count ? deduplicatedDayVisits[i + 1].arrivalDate : nil
+
+            // The last ongoing visit is the current location — always include it as still ongoing.
+            if visit.isOngoing && nextArrival == nil {
+                return (visit, nil)
+            }
+
             let dep = effectiveDeparture(for: visit, nextArrival: nextArrival)
             let duration = (dep ?? Date.now).timeIntervalSince(visit.arrivalDate)
             guard duration >= minVisitDuration else { return nil }
