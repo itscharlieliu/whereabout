@@ -1,5 +1,6 @@
 import Foundation
 import CoreLocation
+import MapKit
 import SwiftData
 
 @MainActor
@@ -98,23 +99,24 @@ final class LocationManager: NSObject, ObservableObject {
 
     private func reverseGeocode(record: VisitRecord, container: ModelContainer) {
         let location = CLLocation(latitude: record.latitude, longitude: record.longitude)
-        let geocoder = CLGeocoder()
+        let visitID = record.persistentModelID
 
-        geocoder.reverseGeocodeLocation(location) { placemarks, error in
-            guard let placemark = placemarks?.first, error == nil else { return }
+        Task {
+            guard let request = MKReverseGeocodingRequest(location: location),
+                  let mapItem = try? await request.mapItems.first
+            else { return }
 
-            Task { @MainActor in
+            let placemark = mapItem.placemark
+            let placeName = mapItem.name ?? placemark.locality
+            let address = [placemark.thoroughfare, placemark.locality, placemark.administrativeArea]
+                .compactMap { $0 }
+                .joined(separator: ", ")
+
+            await MainActor.run {
                 let context = ModelContext(container)
-                let visitID = record.persistentModelID
                 if let visit = context.model(for: visitID) as? VisitRecord {
-                    visit.placeName = placemark.name ?? placemark.locality
-                    visit.address = [
-                        placemark.thoroughfare,
-                        placemark.locality,
-                        placemark.administrativeArea
-                    ]
-                    .compactMap { $0 }
-                    .joined(separator: ", ")
+                    visit.placeName = placeName
+                    visit.address = address
                     try? context.save()
                 }
             }
