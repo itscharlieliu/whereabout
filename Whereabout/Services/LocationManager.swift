@@ -67,8 +67,9 @@ final class LocationManager: NSObject, ObservableObject {
         guard let container = modelContainer else { return }
         let context = ModelContext(container)
 
-        // If this is a departure event, update the existing record instead of inserting a duplicate.
-        let arrivalDate = visit.arrivalDate
+        // If arrivalDate is distantPast, iOS started monitoring mid-visit and doesn't
+        // know the real start time. Use now as a best-effort arrival date.
+        let arrivalDate = visit.arrivalDate == .distantPast ? Date() : visit.arrivalDate
         let existing = try? context.fetch(
             FetchDescriptor<VisitRecord>(
                 predicate: #Predicate { $0.arrivalDate == arrivalDate }
