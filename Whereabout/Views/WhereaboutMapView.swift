@@ -80,7 +80,7 @@ struct WhereaboutMapView: View {
                         .font(.system(size: 17, weight: .medium))
                         .foregroundStyle(.blue)
                         .frame(width: 44, height: 44)
-                        .background(.white)
+                        .background(Color(.systemBackground))
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
                 }
