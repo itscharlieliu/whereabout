@@ -6,13 +6,23 @@ struct ContentView: View {
     @StateObject private var locationManager = LocationManager.shared
     @Environment(\.modelContext) private var modelContext
 
-    @State private var selectedDate = Date()
+    @State private var scrolledDate: Date? = nil
     @State private var showDatePicker = false
     @State private var showSettings = false
     @State private var exportItem: ExportURL?
     @State private var showImportPicker = false
     @State private var importMessage: String?
     @State private var showImportAlert = false
+
+    private var today: Date { Calendar.current.startOfDay(for: Date()) }
+    private var selectedDate: Date { scrolledDate ?? today }
+
+    /// 730 days ending today, each normalized to start-of-day.
+    private var scrollDates: [Date] {
+        (0..<730).reversed().compactMap {
+            Calendar.current.date(byAdding: .day, value: -$0, to: today)
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -22,8 +32,19 @@ struct ContentView: View {
 
                 Divider()
 
-                // Whereabout content
-                WhereaboutView(selectedDate: selectedDate)
+                // Horizontal paging scroll — one WhereaboutView per day, lazy loaded
+                ScrollView(.horizontal) {
+                    LazyHStack(spacing: 0) {
+                        ForEach(scrollDates, id: \.self) { date in
+                            WhereaboutView(selectedDate: date)
+                                .containerRelativeFrame(.horizontal)
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .scrollTargetBehavior(.paging)
+                .scrollPosition(id: $scrolledDate)
+                .onAppear { scrolledDate = today }
             }
             .navigationTitle("Whereabout")
             .navigationBarTitleDisplayMode(.inline)
@@ -37,7 +58,7 @@ struct ContentView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        selectedDate = Date()
+                        scrolledDate = today
                     } label: {
                         Text("Today")
                             .fontWeight(.medium)
@@ -70,9 +91,7 @@ struct ContentView: View {
     private var dateNavigationBar: some View {
         HStack {
             Button {
-                withAnimation {
-                    selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-                }
+                scrolledDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.title3)
@@ -98,9 +117,7 @@ struct ContentView: View {
             Spacer()
 
             Button {
-                withAnimation {
-                    selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-                }
+                scrolledDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.title3)
@@ -131,7 +148,10 @@ struct ContentView: View {
             VStack {
                 DatePicker(
                     "Select Date",
-                    selection: $selectedDate,
+                    selection: Binding(
+                        get: { selectedDate },
+                        set: { scrolledDate = Calendar.current.startOfDay(for: $0) }
+                    ),
                     in: ...Date(),
                     displayedComponents: .date
                 )
