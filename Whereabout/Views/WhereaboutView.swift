@@ -7,13 +7,15 @@ struct WhereaboutView: View {
 
     @Query private var dayLocations: [LocationRecord]
     @Query private var dayVisits: [VisitRecord]
-    @Query private var priorLocation: [LocationRecord]
-    @Query private var priorVisit: [VisitRecord]
+    @Query private var priorLocations: [LocationRecord]
+    @Query private var priorVisits: [VisitRecord]
 
     @State private var selectedVisit: VisitRecord?
 
     init(selectedDate: Date) {
         self.selectedDate = selectedDate
+
+        // Build day boundaries in the device's local timezone.
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .current
         let startOfDay = calendar.startOfDay(for: selectedDate)
@@ -33,78 +35,35 @@ struct WhereaboutView: View {
             sort: \.arrivalDate
         )
 
-        var priorVisitDescriptor = FetchDescriptor<VisitRecord>(
-            predicate: #Predicate { $0.arrivalDate < startOfDay },
-            sortBy: [SortDescriptor(\.arrivalDate, order: .reverse)]
-        )
-        priorVisitDescriptor.fetchLimit = 1
-        _priorVisit = Query(priorVisitDescriptor)
-
-        var priorDescriptor = FetchDescriptor<LocationRecord>(
+        var priorLocationsDescriptor = FetchDescriptor<LocationRecord>(
             predicate: #Predicate { $0.timestamp < startOfDay },
             sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
         )
-        priorDescriptor.fetchLimit = 1
-        _priorLocation = Query(priorDescriptor)
+        priorLocationsDescriptor.fetchLimit = 1
+        _priorLocations = Query(priorLocationsDescriptor)
+
+        var priorVisitsDescriptor = FetchDescriptor<VisitRecord>(
+            predicate: #Predicate { $0.arrivalDate < startOfDay },
+            sortBy: [SortDescriptor(\.arrivalDate, order: .reverse)]
+        )
+        priorVisitsDescriptor.fetchLimit = 1
+        _priorVisits = Query(priorVisitsDescriptor)
     }
 
-    private let minVisitDuration: TimeInterval = 5 * 60
-
-    // Effective departure for a visit: real departure, or earliest of next-visit arrival
-    // and first location recorded after the visit started (whichever comes first).
-    private func effectiveDeparture(for visit: VisitRecord, nextArrival: Date?) -> Date? {
-        if !visit.isOngoing { return visit.departureDate }
-        let firstLocationAfter = dayLocations.first { $0.timestamp > visit.arrivalDate }?.timestamp
-        return [nextArrival, firstLocationAfter].compactMap { $0 }.min()
-    }
-
-    // Deduplicate visits with the same arrivalDate, keeping the one with a real departure.
-    private var deduplicatedDayVisits: [VisitRecord] {
-        var best: [Date: VisitRecord] = [:]
-        for visit in dayVisits {
-            if let existing = best[visit.arrivalDate] {
-                if existing.isOngoing && !visit.isOngoing {
-                    best[visit.arrivalDate] = visit
-                }
-            } else {
-                best[visit.arrivalDate] = visit
-            }
-        }
-        return dayVisits.filter { best[$0.arrivalDate]?.persistentModelID == $0.persistentModelID }
-    }
-
-    // deduplicatedDayVisits filtered to >= 5 min, each paired with its effective departure.
-    private var filteredDayVisits: [(visit: VisitRecord, effectiveDeparture: Date?)] {
-        deduplicatedDayVisits.enumerated().compactMap { i, visit in
-            let nextArrival = i + 1 < deduplicatedDayVisits.count ? deduplicatedDayVisits[i + 1].arrivalDate : nil
-
-            // The last ongoing visit is the current location — always include it as still ongoing.
-            if visit.isOngoing && nextArrival == nil {
-                return (visit, nil)
-            }
-
-            let dep = effectiveDeparture(for: visit, nextArrival: nextArrival)
-            let duration = (dep ?? Date.now).timeIntervalSince(visit.arrivalDate)
-            guard duration >= minVisitDuration else { return nil }
-            return (visit, dep)
-        }
-    }
-
-    private var totalDistance: Double {
-        guard dayLocations.count >= 2 else { return 0 }
-        var distance: Double = 0
-        for i in 1..<dayLocations.count {
-            let prev = CLLocation(latitude: dayLocations[i-1].latitude, longitude: dayLocations[i-1].longitude)
-            let curr = CLLocation(latitude: dayLocations[i].latitude, longitude: dayLocations[i].longitude)
-            distance += curr.distance(from: prev)
-        }
-        return distance
+    /// Single source of truth for all processed day data.
+    private var dayData: DayData {
+        DayData.build(
+            locations: dayLocations,
+            visits: dayVisits,
+            priorLocation: priorLocations.first,
+            priorVisit: priorVisits.first
+        )
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Map section
-            WhereaboutMapView(locations: dayLocations, visits: filteredDayVisits.map(\.visit), selectedVisit: selectedVisit, priorLocation: priorLocation.first)
+            // Map
+            WhereaboutMapView(dayData: dayData, selectedVisit: selectedVisit)
                 .frame(height: 300)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal)
@@ -117,8 +76,8 @@ struct WhereaboutView: View {
 
             Divider()
 
-            // Timeline list
-            if dayVisits.isEmpty && dayLocations.isEmpty {
+            // Timeline
+            if dayData.isEmpty {
                 emptyState
             } else {
                 timelineList
@@ -130,29 +89,10 @@ struct WhereaboutView: View {
 
     private var statsBar: some View {
         HStack(spacing: 20) {
-            StatBadge(
-                icon: "figure.walk",
-                value: formattedDistance,
-                label: "Distance"
-            )
-            StatBadge(
-                icon: "mappin.and.ellipse",
-                value: "\(filteredDayVisits.count)",
-                label: "Places"
-            )
-            StatBadge(
-                icon: "location.fill",
-                value: "\(dayLocations.count)",
-                label: "Points"
-            )
+            StatBadge(icon: "figure.walk",        value: dayData.formattedDistance, label: "Distance")
+            StatBadge(icon: "mappin.and.ellipse",  value: "\(dayData.filteredVisits.count)", label: "Places")
+            StatBadge(icon: "location.fill",       value: "\(dayData.locations.count)", label: "Points")
         }
-    }
-
-    private var formattedDistance: String {
-        if totalDistance >= 1000 {
-            return String(format: "%.1f km", totalDistance / 1000)
-        }
-        return String(format: "%.0f m", totalDistance)
     }
 
     // MARK: - Empty State
@@ -180,24 +120,23 @@ struct WhereaboutView: View {
     private var timelineList: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                if let prior = priorVisit.first {
-                    let firstTodayVisit = dayVisits.first?.arrivalDate
-                    let firstTodayLocation = dayLocations.first?.timestamp
-                    let inferredDep = prior.isOngoing
-                        ? [firstTodayVisit, firstTodayLocation].compactMap { $0 }.min()
-                        : nil
-                    visitRow(prior, inferredDeparture: inferredDep)
+                // Prior (carry-over) visit from the previous day
+                if let prior = dayData.priorVisit {
+                    visitRow(prior, inferredDeparture: dayData.inferredPriorDeparture())
                         .onTapGesture { selectedVisit = prior }
                 }
 
-                ForEach(filteredDayVisits, id: \.visit.id) { item in
-                    let inferredDep = item.visit.isOngoing ? item.effectiveDeparture : nil
-                    visitRow(item.visit, inferredDeparture: inferredDep)
-                        .onTapGesture { selectedVisit = item.visit }
+                // Today's visits
+                ForEach(dayData.filteredVisits) { item in
+                    visitRow(
+                        item.visit,
+                        inferredDeparture: item.visit.isOngoing ? item.effectiveDeparture : nil
+                    )
+                    .onTapGesture { selectedVisit = item.visit }
                 }
 
-                // If we have locations but no visits, show a simple route summary
-                if dayVisits.isEmpty && !dayLocations.isEmpty {
+                // If we have GPS points but no visits, show a simple route summary.
+                if dayData.filteredVisits.isEmpty && !dayData.locations.isEmpty {
                     routeSummaryRow
                 }
             }
@@ -212,21 +151,18 @@ struct WhereaboutView: View {
         let stillOngoing = effectiveDeparture == nil
 
         let displayDuration: String = {
-            let end = effectiveDeparture ?? Date.now
-            let interval = end.timeIntervalSince(visit.arrivalDate)
+            let end = effectiveDeparture ?? .now
             let f = DateComponentsFormatter()
             f.allowedUnits = [.hour, .minute]
             f.unitsStyle = .abbreviated
-            return f.string(from: interval) ?? ""
+            return f.string(from: end.timeIntervalSince(visit.arrivalDate)) ?? ""
         }()
 
         return HStack(alignment: .top, spacing: 12) {
-            // Timeline indicator
             Circle()
                 .fill(stillOngoing ? Color.green : Color.blue)
                 .frame(width: 12, height: 12)
 
-            // Content
             VStack(alignment: .leading, spacing: 4) {
                 Text(visit.placeName ?? "Unknown Place")
                     .font(.headline)
@@ -259,10 +195,7 @@ struct WhereaboutView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(
-                        Capsule()
-                            .fill(stillOngoing ? Color.green : Color.blue)
-                    )
+                    .background(Capsule().fill(stillOngoing ? Color.green : Color.blue))
             }
 
             Spacer()
@@ -271,28 +204,25 @@ struct WhereaboutView: View {
         .padding(.vertical, 8)
     }
 
-    // MARK: - Route Summary
+    // MARK: - Route Summary Row
 
     private var routeSummaryRow: some View {
         HStack(alignment: .top, spacing: 12) {
-            VStack(spacing: 4) {
-                Circle()
-                    .fill(.blue)
-                    .frame(width: 12, height: 12)
-            }
-            .frame(width: 12)
+            Circle()
+                .fill(.blue)
+                .frame(width: 12, height: 12)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Route recorded")
                     .font(.headline)
 
-                if let first = dayLocations.first, let last = dayLocations.last {
+                if let first = dayData.locations.first, let last = dayData.locations.last {
                     Text("\(first.timestamp.formatted(date: .omitted, time: .shortened)) – \(last.timestamp.formatted(date: .omitted, time: .shortened))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
-                Text(formattedDistance)
+                Text(dayData.formattedDistance)
                     .font(.caption2)
                     .fontWeight(.medium)
                     .foregroundStyle(.white)
@@ -329,9 +259,6 @@ struct StatBadge: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color(.systemGray6))
-        )
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)))
     }
 }

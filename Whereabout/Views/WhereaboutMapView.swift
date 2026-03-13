@@ -2,19 +2,17 @@ import SwiftUI
 import MapKit
 
 struct WhereaboutMapView: View {
-    let locations: [LocationRecord]
-    let visits: [VisitRecord]
+    let dayData: DayData
     var selectedVisit: VisitRecord? = nil
-    var priorLocation: LocationRecord? = nil
 
     @State private var position: MapCameraPosition = .automatic
 
     var body: some View {
         Map(position: $position) {
-            // Draw route polyline, anchored to previous day's last location if available
+            // Route polyline, anchored to the previous day's last location if available.
             let polylineCoords: [CLLocationCoordinate2D] = {
-                var coords = locations.map { $0.coordinate }
-                if let prior = priorLocation { coords.insert(prior.coordinate, at: 0) }
+                var coords = dayData.locations.map { $0.coordinate }
+                if let prior = dayData.priorLocation { coords.insert(prior.coordinate, at: 0) }
                 return coords
             }()
             if polylineCoords.count >= 2 {
@@ -23,7 +21,8 @@ struct WhereaboutMapView: View {
             }
 
             // Visit annotations
-            ForEach(visits) { visit in
+            ForEach(dayData.filteredVisits) { item in
+                let visit = item.visit
                 Annotation(
                     visit.placeName ?? "Visit",
                     coordinate: visit.coordinate,
@@ -43,14 +42,14 @@ struct WhereaboutMapView: View {
             }
 
             // Start and end markers for route
-            if let first = locations.first {
+            if let first = dayData.locations.first {
                 Annotation("Start", coordinate: first.coordinate, anchor: .bottom) {
                     Image(systemName: "flag.circle.fill")
                         .font(.title2)
                         .foregroundStyle(.green)
                 }
             }
-            if locations.count > 1, let last = locations.last {
+            if dayData.locations.count > 1, let last = dayData.locations.last {
                 Annotation("Latest", coordinate: last.coordinate, anchor: .bottom) {
                     Image(systemName: "flag.checkered.circle.fill")
                         .font(.title2)
@@ -81,6 +80,11 @@ struct WhereaboutMapView: View {
 
 struct WhereaboutMapView_Previews: PreviewProvider {
     static var previews: some View {
-        WhereaboutMapView(locations: [], visits: [])
+        WhereaboutMapView(dayData: DayData.build(
+            locations: [],
+            visits: [],
+            priorLocation: LocationRecord?.none,
+            priorVisit: VisitRecord?.none
+        ))
     }
 }
