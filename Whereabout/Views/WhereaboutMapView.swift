@@ -6,6 +6,8 @@ struct WhereaboutMapView: View {
     var selectedVisit: VisitRecord? = nil
 
     @State private var position: MapCameraPosition = .automatic
+    @State private var mapMoved = false
+    @State private var cameraSettled = false
 
     var body: some View {
         Map(position: $position) {
@@ -65,8 +67,36 @@ struct WhereaboutMapView: View {
             MapScaleView()
             MapUserLocationButton()
         }
+        .overlay(alignment: .topLeading) {
+            if mapMoved {
+                Button {
+                    mapMoved = false
+                    settleCamera()
+                    if let region = contentRegion {
+                        withAnimation { position = .region(region) }
+                    }
+                } label: {
+                    Image(systemName: "arrow.uturn.backward")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundStyle(.blue)
+                        .frame(width: 44, height: 44)
+                        .background(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                }
+                .padding(.top, 8)
+                .padding(.leading, 8)
+                .transition(.opacity)
+            }
+        }
+        .onAppear { settleCamera() }
+        .onMapCameraChange {
+            guard cameraSettled else { return }
+            withAnimation { mapMoved = true }
+        }
         .onChange(of: selectedVisit?.persistentModelID) { _, _ in
             guard let visit = selectedVisit else { return }
+            settleCamera()
             withAnimation {
                 position = .region(MKCoordinateRegion(
                     center: visit.coordinate,
@@ -74,6 +104,41 @@ struct WhereaboutMapView: View {
                     longitudinalMeters: 500
                 ))
             }
+        }
+    }
+
+    /// Bounding region that fits all of the day's locations and visits.
+    private var contentRegion: MKCoordinateRegion? {
+        var coords: [CLLocationCoordinate2D] = dayData.locations.map(\.coordinate)
+        coords += dayData.filteredVisits.map(\.visit.coordinate)
+        if let prior = dayData.priorLocation { coords.append(prior.coordinate) }
+        guard !coords.isEmpty else { return nil }
+
+        let lats = coords.map(\.latitude)
+        let lons = coords.map(\.longitude)
+        let minLat = lats.min()!, maxLat = lats.max()!
+        let minLon = lons.min()!, maxLon = lons.max()!
+
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(
+                latitude: (minLat + maxLat) / 2,
+                longitude: (minLon + maxLon) / 2
+            ),
+            span: MKCoordinateSpan(
+                latitudeDelta: max(maxLat - minLat, 0.005) * 1.4,
+                longitudeDelta: max(maxLon - minLon, 0.005) * 1.4
+            )
+        )
+    }
+
+    /// Marks the camera as settling so the next camera changes (from automatic
+    /// positioning or programmatic moves) are ignored. Re-enables tracking after
+    /// a short delay once the map has finished animating.
+    private func settleCamera() {
+        cameraSettled = false
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(700))
+            cameraSettled = true
         }
     }
 }
