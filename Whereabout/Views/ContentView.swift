@@ -103,12 +103,18 @@ struct ContentView: View {
             Button {
                 showDatePicker = true
             } label: {
-                VStack(spacing: 2) {
-                    Text(dayLabel)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
+                HStack(spacing: 4) {
+                    VStack(spacing: 2) {
+                        Text(dayLabel)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Image(systemName: "chevron.down")
                         .font(.caption)
+                        .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
                 }
             }
