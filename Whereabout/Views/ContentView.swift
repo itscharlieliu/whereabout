@@ -44,6 +44,7 @@ struct ContentView: View {
                 }
                 .scrollTargetBehavior(.paging)
                 .scrollPosition(id: $scrolledDate)
+                .scrollIndicators(.hidden)
                 .onAppear { scrolledDate = today }
             }
             .navigationTitle("Whereabout")
