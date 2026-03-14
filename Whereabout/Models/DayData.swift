@@ -38,9 +38,11 @@ struct DayData {
     }
 
     var formattedDistance: String {
-        totalDistance >= 1000
-            ? String(format: "%.1f km", totalDistance / 1000)
-            : String(format: "%.0f m", totalDistance)
+        let measurement = Measurement(value: totalDistance, unit: UnitLength.meters)
+        let formatter = MeasurementFormatter()
+        formatter.unitOptions = .naturalScale
+        formatter.numberFormatter.maximumFractionDigits = 1
+        return formatter.string(from: measurement)
     }
 
     // MARK: - Factory
