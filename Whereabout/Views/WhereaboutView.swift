@@ -162,76 +162,25 @@ struct WhereaboutView: View {
                 return f.string(from: end.timeIntervalSince(visit.arrivalDate)) ?? ""
             }()
 
-            HStack(alignment: .top, spacing: 12) {
-                Circle()
-                    .fill(stillOngoing ? Color.green : Color.blue)
-                    .frame(width: 12, height: 12)
-
-                VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(stillOngoing ? Color.green : Color.blue)
+                        .frame(width: 12, height: 12)
                     Text(visit.placeName ?? "Unknown Place")
                         .font(.headline)
-
-                    if let address = visit.address, !address.isEmpty {
-                        Text(address)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    HStack(spacing: 8) {
-                        Label(visit.formattedArrival, systemImage: "figure.walk.arrival")
-                        Text("–")
-                        if stillOngoing {
-                            Label("now", systemImage: "clock.fill")
-                                .foregroundStyle(.green)
-                        } else {
-                            Label(
-                                effectiveDeparture!.formatted(date: .omitted, time: .shortened),
-                                systemImage: "figure.walk.departure"
-                            )
-                        }
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                    if displayDuration != "" {
-                        Text(displayDuration)
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Capsule().fill(stillOngoing ? Color.green : Color.blue))
-                    }
+                    Spacer()
                 }
-
-                Spacer()
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-        }
-    }
-
-    private func startingVisitRow(_ visit: VisitRecord, inferredDeparture: Date? = nil) -> some View {
-        let effectiveDeparture = inferredDeparture ?? (visit.isOngoing ? nil : visit.departureDate)
-        let stillOngoing = effectiveDeparture == nil
-
-        return HStack(alignment: .top, spacing: 12) {
-            Circle()
-                .fill(stillOngoing ? Color.green : Color.blue)
-                .frame(width: 12, height: 12)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(visit.placeName ?? "Unknown Place")
-                    .font(.headline)
 
                 if let address = visit.address, !address.isEmpty {
                     Text(address)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .padding(.leading, 20)
                 }
 
                 HStack(spacing: 8) {
-                    Label("Started here", systemImage: "mappin.and.ellipse")
+                    Label(visit.formattedArrival, systemImage: "figure.walk.arrival")
                     Text("–")
                     if stillOngoing {
                         Label("now", systemImage: "clock.fill")
@@ -245,9 +194,61 @@ struct WhereaboutView: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .padding(.leading, 20)
+
+                if displayDuration != "" {
+                    Text(displayDuration)
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Capsule().fill(stillOngoing ? Color.green : Color.blue))
+                        .padding(.leading, 20)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+    }
+
+    private func startingVisitRow(_ visit: VisitRecord, inferredDeparture: Date? = nil) -> some View {
+        let effectiveDeparture = inferredDeparture ?? (visit.isOngoing ? nil : visit.departureDate)
+        let stillOngoing = effectiveDeparture == nil
+
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(stillOngoing ? Color.green : Color.blue)
+                    .frame(width: 12, height: 12)
+                Text(visit.placeName ?? "Unknown Place")
+                    .font(.headline)
+                Spacer()
             }
 
-            Spacer()
+            if let address = visit.address, !address.isEmpty {
+                Text(address)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 20)
+            }
+
+            HStack(spacing: 8) {
+                Label("Started here", systemImage: "mappin.and.ellipse")
+                Text("–")
+                if stillOngoing {
+                    Label("now", systemImage: "clock.fill")
+                        .foregroundStyle(.green)
+                } else {
+                    Label(
+                        effectiveDeparture!.formatted(date: .omitted, time: .shortened),
+                        systemImage: "figure.walk.departure"
+                    )
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.leading, 20)
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
