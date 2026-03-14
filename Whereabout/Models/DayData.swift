@@ -17,13 +17,14 @@ struct DayData {
     let locations: [LocationRecord]
     /// Deduplicated, duration-filtered visits paired with their effective departure times.
     let filteredVisits: [FilteredVisit]
-    /// Last known location from the day before (used to anchor the route polyline).
-    let priorLocation: LocationRecord?
-    /// Last visit that started before today (shown at the top of the timeline).
-    let priorVisit: VisitRecord?
 
     var isEmpty: Bool {
         locations.isEmpty && filteredVisits.isEmpty
+    }
+
+    /// Total number of places for the day, including an ongoing prior visit.
+    var placesCount: Int {
+        return filteredVisits.count
     }
 
     var totalDistance: Double {
@@ -59,8 +60,6 @@ struct DayData {
     static func build(
         locations: [LocationRecord],
         visits: [VisitRecord],
-        priorLocation: LocationRecord?,
-        priorVisit: VisitRecord?
     ) -> DayData {
         // Deduplicate: for identical arrivalDate keep the record with a real departure.
         var best: [Date: VisitRecord] = [:]
@@ -101,18 +100,6 @@ struct DayData {
         return DayData(
             locations: locations,
             filteredVisits: filtered,
-            priorLocation: priorLocation,
-            priorVisit: priorVisit
         )
-    }
-
-    // MARK: - Prior-visit helpers
-
-    /// Inferred departure for the prior (carry-over) visit based on today's earliest data.
-    func inferredPriorDeparture() -> Date? {
-        guard let prior = priorVisit, prior.isOngoing else { return nil }
-        let firstTodayVisit = filteredVisits.first?.visit.arrivalDate
-        let firstTodayLocation = locations.first?.timestamp
-        return [firstTodayVisit, firstTodayLocation].compactMap { $0 }.min()
     }
 }

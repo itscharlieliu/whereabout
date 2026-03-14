@@ -5,8 +5,8 @@ import MapKit
 struct WhereaboutView: View {
     let selectedDate: Date
 
-    @Query private var dayLocations: [LocationRecord]
-    @Query private var dayVisits: [VisitRecord]
+    @Query private var currDayLocations: [LocationRecord]
+    @Query private var currDayVisits: [VisitRecord]
     @Query private var priorLocations: [LocationRecord]
     @Query private var priorVisits: [VisitRecord]
 
@@ -21,14 +21,14 @@ struct WhereaboutView: View {
         let startOfDay = calendar.startOfDay(for: selectedDate)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
 
-        _dayLocations = Query(
+        _currDayLocations = Query(
             filter: #Predicate<LocationRecord> { record in
                 record.timestamp >= startOfDay && record.timestamp < endOfDay
             },
             sort: \.timestamp
         )
 
-        _dayVisits = Query(
+        _currDayVisits = Query(
             filter: #Predicate<VisitRecord> { visit in
                 visit.arrivalDate >= startOfDay && visit.arrivalDate < endOfDay
             },
@@ -49,14 +49,20 @@ struct WhereaboutView: View {
         priorVisitsDescriptor.fetchLimit = 1
         _priorVisits = Query(priorVisitsDescriptor)
     }
+    
+    private var dayLocations: [LocationRecord] {
+        [priorLocations.first].compactMap { $0 } + currDayLocations
+    }
+    
+    private var dayVisits: [VisitRecord] {
+        [priorVisits.first].compactMap { $0 } + currDayVisits
+    }
 
     /// Single source of truth for all processed day data.
     private var dayData: DayData {
         DayData.build(
             locations: dayLocations,
             visits: dayVisits,
-            priorLocation: priorLocations.first,
-            priorVisit: priorVisits.first
         )
     }
 
@@ -90,7 +96,7 @@ struct WhereaboutView: View {
     private var statsBar: some View {
         HStack(spacing: 20) {
             StatBadge(icon: "road.lanes",          value: dayData.formattedDistance, label: "Distance")
-            StatBadge(icon: "mappin.and.ellipse",  value: "\(dayData.filteredVisits.count)", label: "Places")
+            StatBadge(icon: "mappin.and.ellipse",  value: "\(dayData.placesCount)", label: "Places")
             StatBadge(icon: "location.fill",       value: "\(dayData.locations.count)", label: "Points")
         }
     }
@@ -120,12 +126,6 @@ struct WhereaboutView: View {
     private var timelineList: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                // Prior (carry-over) visit from the previous day
-                if let prior = dayData.priorVisit {
-                    visitRow(prior, inferredDeparture: dayData.inferredPriorDeparture())
-                        .onTapGesture { selectedVisit = prior }
-                }
-
                 // Today's visits
                 ForEach(dayData.filteredVisits) { item in
                     visitRow(

@@ -14,7 +14,7 @@ struct WhereaboutMapView: View {
             // Route polyline, anchored to the previous day's last location if available.
             let polylineCoords: [CLLocationCoordinate2D] = {
                 var coords = dayData.locations.map { $0.coordinate }
-                if let prior = dayData.priorLocation { coords.insert(prior.coordinate, at: 0) }
+//                if let prior = dayData.priorLocation { coords.insert(prior.coordinate, at: 0) }
                 return coords
             }()
             if polylineCoords.count >= 2 {
@@ -96,7 +96,7 @@ struct WhereaboutMapView: View {
     private var contentRegion: MKCoordinateRegion? {
         var coords: [CLLocationCoordinate2D] = dayData.locations.map(\.coordinate)
         coords += dayData.filteredVisits.map(\.visit.coordinate)
-        if let prior = dayData.priorLocation { coords.append(prior.coordinate) }
+//        if let prior = dayData.priorLocation { coords.append(prior.coordinate) }
         guard !coords.isEmpty else { return nil }
 
         let lats = coords.map(\.latitude)
@@ -133,8 +133,8 @@ struct WhereaboutMapView_Previews: PreviewProvider {
         WhereaboutMapView(dayData: DayData.build(
             locations: [],
             visits: [],
-            priorLocation: LocationRecord?.none,
-            priorVisit: VisitRecord?.none
+//            priorLocation: LocationRecord?.none,
+//            priorVisit: VisitRecord?.none
         ))
     }
 }
