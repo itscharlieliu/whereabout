@@ -131,10 +131,11 @@ final class LocationManager: NSObject, ObservableObject {
                   let mapItem = try? await request.mapItems.first
             else { return }
 
-            let placemark = mapItem.placemark
-            let placeName = mapItem.name ?? placemark.locality
-            let address = [placemark.thoroughfare, placemark.locality, placemark.administrativeArea]
+            let addressRep = mapItem.addressRepresentations
+            let placeName = mapItem.name ?? addressRep?.cityName
+            let address = [mapItem.address?.shortAddress, addressRep?.regionName]
                 .compactMap { $0 }
+                .filter { !$0.isEmpty }
                 .joined(separator: ", ")
 
             await MainActor.run {
