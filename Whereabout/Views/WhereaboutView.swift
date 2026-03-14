@@ -89,7 +89,7 @@ struct WhereaboutView: View {
 
     private var statsBar: some View {
         HStack(spacing: 20) {
-            StatBadge(icon: "figure.walk",        value: dayData.formattedDistance, label: "Distance")
+            StatBadge(icon: "road.lanes",          value: dayData.formattedDistance, label: "Distance")
             StatBadge(icon: "mappin.and.ellipse",  value: "\(dayData.filteredVisits.count)", label: "Places")
             StatBadge(icon: "location.fill",       value: "\(dayData.locations.count)", label: "Points")
         }
