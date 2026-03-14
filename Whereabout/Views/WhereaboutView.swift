@@ -178,7 +178,7 @@ struct WhereaboutView: View {
                     }
 
                     HStack(spacing: 8) {
-                        Label(visit.formattedArrival, systemImage: "arrow.right.circle")
+                        Label(visit.formattedArrival, systemImage: "figure.walk.arrival")
                         Text("–")
                         if stillOngoing {
                             Label("now", systemImage: "clock.fill")
@@ -186,7 +186,7 @@ struct WhereaboutView: View {
                         } else {
                             Label(
                                 effectiveDeparture!.formatted(date: .omitted, time: .shortened),
-                                systemImage: "arrow.left.circle"
+                                systemImage: "figure.walk.departure"
                             )
                         }
                     }
@@ -231,7 +231,7 @@ struct WhereaboutView: View {
                 }
 
                 HStack(spacing: 8) {
-                    Label("Started here", systemImage: "mappin.circle")
+                    Label("Started here", systemImage: "mappin.and.ellipse")
                     Text("–")
                     if stillOngoing {
                         Label("now", systemImage: "clock.fill")
@@ -239,7 +239,7 @@ struct WhereaboutView: View {
                     } else {
                         Label(
                             effectiveDeparture!.formatted(date: .omitted, time: .shortened),
-                            systemImage: "arrow.left.circle"
+                            systemImage: "figure.walk.departure"
                         )
                     }
                 }
