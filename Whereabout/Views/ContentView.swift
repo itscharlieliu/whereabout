@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var showImportPicker = false
     @State private var importMessage: String?
     @State private var showImportAlert = false
+    @State private var showDeleteConfirmation = false
 
     private var today: Date { Calendar.current.startOfDay(for: Date()) }
     private var selectedDate: Date { scrolledDate ?? today }
@@ -79,7 +80,7 @@ struct ContentView: View {
                     locationManager.requestPermission()
                 } else if locationManager.authorizationStatus == .authorizedAlways ||
                           locationManager.authorizationStatus == .authorizedWhenInUse {
-                    if !locationManager.isTracking {
+                    if !locationManager.isTracking && locationManager.trackingEnabledPreference {
                         locationManager.startTracking()
                     }
                 }
@@ -270,7 +271,7 @@ struct ContentView: View {
                     }
 
                     Button(role: .destructive) {
-                        clearAllData()
+                        showDeleteConfirmation = true
                     } label: {
                         Label("Delete All Data", systemImage: "trash")
                     }
@@ -330,6 +331,14 @@ struct ContentView: View {
             } message: {
                 Text(importMessage ?? "")
             }
+            .alert("Delete All Data?", isPresented: $showDeleteConfirmation) {
+                Button("Delete", role: .destructive) {
+                    clearAllData()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will permanently delete all your location and visit history. This cannot be undone.")
+            }
         }
     }
 
@@ -349,9 +358,11 @@ struct ContentView: View {
             try modelContext.delete(model: LocationRecord.self)
             try modelContext.delete(model: VisitRecord.self)
             try modelContext.save()
+            importMessage = "All data deleted successfully."
         } catch {
-            print("Failed to delete data: \(error)")
+            importMessage = "Delete failed: \(error.localizedDescription)"
         }
+        showImportAlert = true
     }
 }
 

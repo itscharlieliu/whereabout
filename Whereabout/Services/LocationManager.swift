@@ -25,23 +25,31 @@ final class LocationManager: NSObject, ObservableObject {
         clManager.requestAlwaysAuthorization()
     }
 
+    static let trackingEnabledKey = "trackingEnabled"
+
+    /// Whether the user has chosen to enable tracking (persisted across launches).
+    var trackingEnabledPreference: Bool {
+        get { UserDefaults.standard.object(forKey: Self.trackingEnabledKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: Self.trackingEnabledKey) }
+    }
+
     func startTracking() {
         guard clManager.authorizationStatus == .authorizedAlways ||
               clManager.authorizationStatus == .authorizedWhenInUse else {
             requestPermission()
             return
         }
-        // Use significant location changes for occasional background updates (~500m movement)
         clManager.startMonitoringSignificantLocationChanges()
-        // Visit monitoring detects when user stays at a place
         clManager.startMonitoringVisits()
         isTracking = true
+        trackingEnabledPreference = true
     }
 
     func stopTracking() {
         clManager.stopMonitoringSignificantLocationChanges()
         clManager.stopMonitoringVisits()
         isTracking = false
+        trackingEnabledPreference = false
     }
 
     private func saveLocation(_ location: CLLocation) {

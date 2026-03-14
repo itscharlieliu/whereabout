@@ -146,17 +146,74 @@ struct WhereaboutView: View {
 
     // MARK: - Visit Row
 
+    @ViewBuilder
     private func visitRow(_ visit: VisitRecord, inferredDeparture: Date? = nil) -> some View {
+        if visit.arrivalDate == .distantPast {
+            startingVisitRow(visit, inferredDeparture: inferredDeparture)
+        } else {
+            let effectiveDeparture = inferredDeparture ?? (visit.isOngoing ? nil : visit.departureDate)
+            let stillOngoing = effectiveDeparture == nil
+
+            let displayDuration: String = {
+                let end = effectiveDeparture ?? .now
+                let f = DateComponentsFormatter()
+                f.allowedUnits = [.hour, .minute]
+                f.unitsStyle = .abbreviated
+                return f.string(from: end.timeIntervalSince(visit.arrivalDate)) ?? ""
+            }()
+
+            HStack(alignment: .top, spacing: 12) {
+                Circle()
+                    .fill(stillOngoing ? Color.green : Color.blue)
+                    .frame(width: 12, height: 12)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(visit.placeName ?? "Unknown Place")
+                        .font(.headline)
+
+                    if let address = visit.address, !address.isEmpty {
+                        Text(address)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    HStack(spacing: 8) {
+                        Label(visit.formattedArrival, systemImage: "arrow.right.circle")
+                        Text("–")
+                        if stillOngoing {
+                            Label("now", systemImage: "clock.fill")
+                                .foregroundStyle(.green)
+                        } else {
+                            Label(
+                                effectiveDeparture!.formatted(date: .omitted, time: .shortened),
+                                systemImage: "arrow.left.circle"
+                            )
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                    if displayDuration != "" {
+                        Text(displayDuration)
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Capsule().fill(stillOngoing ? Color.green : Color.blue))
+                    }
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+    }
+
+    private func startingVisitRow(_ visit: VisitRecord, inferredDeparture: Date? = nil) -> some View {
         let effectiveDeparture = inferredDeparture ?? (visit.isOngoing ? nil : visit.departureDate)
         let stillOngoing = effectiveDeparture == nil
-
-        let displayDuration: String = {
-            let end = effectiveDeparture ?? .now
-            let f = DateComponentsFormatter()
-            f.allowedUnits = [.hour, .minute]
-            f.unitsStyle = .abbreviated
-            return f.string(from: end.timeIntervalSince(visit.arrivalDate)) ?? ""
-        }()
 
         return HStack(alignment: .top, spacing: 12) {
             Circle()
@@ -174,7 +231,7 @@ struct WhereaboutView: View {
                 }
 
                 HStack(spacing: 8) {
-                    Label(visit.formattedArrival, systemImage: "arrow.right.circle")
+                    Label("Started here", systemImage: "mappin.circle")
                     Text("–")
                     if stillOngoing {
                         Label("now", systemImage: "clock.fill")
@@ -188,14 +245,6 @@ struct WhereaboutView: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
-
-                Text(displayDuration)
-                    .font(.caption2)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Capsule().fill(stillOngoing ? Color.green : Color.blue))
             }
 
             Spacer()
