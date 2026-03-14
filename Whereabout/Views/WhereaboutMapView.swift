@@ -43,21 +43,6 @@ struct WhereaboutMapView: View {
                 }
             }
 
-            // Start and end markers for route
-            if let first = dayData.locations.first {
-                Annotation("Start", coordinate: first.coordinate, anchor: .bottom) {
-                    Image(systemName: "flag.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.green)
-                }
-            }
-            if dayData.locations.count > 1, let last = dayData.locations.last {
-                Annotation("Latest", coordinate: last.coordinate, anchor: .bottom) {
-                    Image(systemName: "flag.checkered.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.orange)
-                }
-            }
         }
         .mapStyle(.standard(elevation: .flat, pointsOfInterest: .including([
             .cafe, .restaurant, .store, .hotel, .airport, .publicTransport
