@@ -13,9 +13,12 @@ struct WhereaboutMapView: View {
         Map(position: $position) {
             // Route polyline, anchored to the previous day's last location if available.
             let polylineCoords: [CLLocationCoordinate2D] = {
-                var coords = dayData.locations.map { $0.coordinate }
-//                if let prior = dayData.priorLocation { coords.insert(prior.coordinate, at: 0) }
-                return coords
+                typealias Timed = (Date, CLLocationCoordinate2D)
+                let locationPoints: [Timed] = dayData.locations.map { ($0.timestamp, $0.coordinate) }
+                let visitPoints: [Timed] = dayData.filteredVisits.map { ($0.visit.arrivalDate, $0.visit.coordinate) }
+                return (locationPoints + visitPoints)
+                    .sorted { $0.0 < $1.0 }
+                    .map { $0.1 }
             }()
             if polylineCoords.count >= 2 {
                 MapPolyline(coordinates: polylineCoords)
@@ -133,8 +136,6 @@ struct WhereaboutMapView_Previews: PreviewProvider {
         WhereaboutMapView(dayData: DayData.build(
             locations: [],
             visits: [],
-//            priorLocation: LocationRecord?.none,
-//            priorVisit: VisitRecord?.none
         ))
     }
 }

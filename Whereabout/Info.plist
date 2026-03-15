@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Timeline needs access to your location at all times to track your movements throughout the day, even when the app is in the background.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Timeline needs access to your location to show where you are and record your movements.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

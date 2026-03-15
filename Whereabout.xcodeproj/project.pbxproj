@@ -10,27 +10,27 @@
 		A1B2C3D400000000000000F0 /* WhereaboutApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D400000000000000F0 /* WhereaboutApp.swift */; };
 		A1B2C3D400000000000000F1 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D400000000000000F1 /* ContentView.swift */; };
 		A1B2C3D400000000000000F2 /* LocationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D400000000000000F2 /* LocationModels.swift */; };
-		A1B2C3D400000000000000FB /* DayData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D400000000000000FB /* DayData.swift */; };
 		A1B2C3D400000000000000F3 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D400000000000000F3 /* LocationManager.swift */; };
-		A1B2C3D400000000000000FA /* CSVManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D400000000000000FA /* CSVManager.swift */; };
 		A1B2C3D400000000000000F4 /* WhereaboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D400000000000000F4 /* WhereaboutView.swift */; };
 		A1B2C3D400000000000000F5 /* WhereaboutMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D400000000000000F5 /* WhereaboutMapView.swift */; };
 		A1B2C3D400000000000000F6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1B2C3D400000000000000F6 /* Assets.xcassets */; };
+		A1B2C3D400000000000000FA /* CSVManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D400000000000000FA /* CSVManager.swift */; };
+		A1B2C3D400000000000000FB /* DayData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B2C3D400000000000000FB /* DayData.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		B1B2C3D400000000000000F0 /* WhereaboutApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhereaboutApp.swift; sourceTree = "<group>"; };
 		B1B2C3D400000000000000F1 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		B1B2C3D400000000000000F2 /* LocationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationModels.swift; sourceTree = "<group>"; };
-		B1B2C3D400000000000000FB /* DayData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayData.swift; sourceTree = "<group>"; };
 		B1B2C3D400000000000000F3 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
-		B1B2C3D400000000000000FA /* CSVManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVManager.swift; sourceTree = "<group>"; };
 		B1B2C3D400000000000000F4 /* WhereaboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhereaboutView.swift; sourceTree = "<group>"; };
 		B1B2C3D400000000000000F5 /* WhereaboutMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhereaboutMapView.swift; sourceTree = "<group>"; };
 		B1B2C3D400000000000000F6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B1B2C3D400000000000000F7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B1B2C3D400000000000000F8 /* Whereabout.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Whereabout.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1B2C3D400000000000000F9 /* Whereabout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Whereabout.entitlements; sourceTree = "<group>"; };
+		B1B2C3D400000000000000FA /* CSVManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVManager.swift; sourceTree = "<group>"; };
+		B1B2C3D400000000000000FB /* DayData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayData.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -326,6 +326,8 @@
 				INFOPLIST_FILE = Whereabout/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Whereabout;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Whereabout needs access to your location at all times to track your movements throughout the day, even when the app is in the background.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Timeline needs access to your location to show where you are and record your movements.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -360,6 +362,8 @@
 				INFOPLIST_FILE = Whereabout/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Whereabout;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Whereabout needs access to your location at all times to track your movements throughout the day, even when the app is in the background.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Timeline needs access to your location to show where you are and record your movements.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
