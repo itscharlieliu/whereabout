@@ -15,7 +15,7 @@ struct WhereaboutMapView: View {
             let polylineCoords: [CLLocationCoordinate2D] = {
                 typealias Timed = (Date, CLLocationCoordinate2D)
                 let locationPoints: [Timed] = dayData.locations.map { ($0.timestamp, $0.coordinate) }
-                let visitPoints: [Timed] = dayData.filteredVisits.map { ($0.visit.arrivalDate, $0.visit.coordinate) }
+                let visitPoints: [Timed] = dayData.filteredVisits.map { ($0.effectiveDeparture ?? .now, $0.visit.coordinate) }
                 return (locationPoints + visitPoints)
                     .sorted { $0.0 < $1.0 }
                     .map { $0.1 }
