@@ -48,7 +48,7 @@ struct DayData {
 
     // MARK: - Factory
 
-    private static let minVisitDuration: TimeInterval = 5 * 60
+    private static let minVisitDuration: TimeInterval = 20 * 60
 
     /// Build a DayData from raw SwiftData query results.
     ///
