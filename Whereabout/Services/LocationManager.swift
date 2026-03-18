@@ -29,8 +29,14 @@ final class LocationManager: NSObject, ObservableObject {
 
     /// Whether the user has chosen to enable tracking (persisted across launches).
     var trackingEnabledPreference: Bool {
-        get { UserDefaults.standard.object(forKey: Self.trackingEnabledKey) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: Self.trackingEnabledKey) }
+        get {
+            let val = UserDefaults.standard.object(forKey: Self.trackingEnabledKey) as? Bool ?? true
+            return val
+        }
+        
+        set {
+            UserDefaults.standard.set(newValue, forKey: Self.trackingEnabledKey)
+        }
     }
 
     func startTracking() {
@@ -157,7 +163,7 @@ extension LocationManager: CLLocationManagerDelegate {
         Task { @MainActor in
             self.authorizationStatus = status
             if status == .authorizedAlways || status == .authorizedWhenInUse {
-                if !self.isTracking {
+                if !self.isTracking &&  self.trackingEnabledPreference{
                     self.startTracking()
                 }
             }
