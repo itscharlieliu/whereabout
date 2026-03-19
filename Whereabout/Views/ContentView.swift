@@ -31,6 +31,25 @@ struct ContentView: View {
                 // Date navigation bar
                 dateNavigationBar
 
+                if !locationManager.isTracking {
+                    HStack(spacing: 6) {
+                        Image(systemName: "pause.circle.fill")
+                        Text("Tracking paused")
+                            .font(.footnote)
+                            .fontWeight(.medium)
+                        Spacer()
+                        Button("Resume") {
+                            locationManager.startTracking()
+                        }
+                        .font(.footnote)
+                        .fontWeight(.semibold)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.orange.opacity(0.15))
+                    .foregroundStyle(Color.orange)
+                }
+
                 Divider()
 
                 // Horizontal paging scroll — one WhereaboutView per day, lazy loaded
