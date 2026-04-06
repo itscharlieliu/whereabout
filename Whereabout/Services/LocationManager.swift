@@ -26,6 +26,8 @@ final class LocationManager: NSObject, ObservableObject {
     }
 
     static let trackingEnabledKey = "trackingEnabled"
+    static let webhookURLKey = "webhookURL"
+    static let webhookBearerTokenKey = "webhookBearerToken"
 
     /// Whether the user has chosen to enable tracking (persisted across launches).
     var trackingEnabledPreference: Bool {
@@ -33,10 +35,21 @@ final class LocationManager: NSObject, ObservableObject {
             let val = UserDefaults.standard.object(forKey: Self.trackingEnabledKey) as? Bool ?? true
             return val
         }
-        
         set {
             UserDefaults.standard.set(newValue, forKey: Self.trackingEnabledKey)
         }
+    }
+
+    /// Optional webhook URL to ping on visit arrive/depart events.
+    var webhookURL: String {
+        get { UserDefaults.standard.string(forKey: Self.webhookURLKey) ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: Self.webhookURLKey) }
+    }
+
+    /// Optional bearer token sent as `Authorization: Bearer <token>` with webhook requests.
+    var webhookBearerToken: String {
+        get { UserDefaults.standard.string(forKey: Self.webhookBearerTokenKey) ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: Self.webhookBearerTokenKey) }
     }
 
     func startTracking() {
@@ -92,6 +105,13 @@ final class LocationManager: NSObject, ObservableObject {
         if let record = existing?.first {
             record.departureDate = visit.departureDate
             try? context.save()
+            pingWebhook(
+                event: "depart",
+                latitude: record.latitude,
+                longitude: record.longitude,
+                placeName: record.placeName,
+                address: record.address
+            )
             return
         }
 
@@ -112,7 +132,68 @@ final class LocationManager: NSObject, ObservableObject {
             print("Failed to save visit: \(error)")
         }
 
+        pingWebhook(
+            event: "arrive",
+            latitude: visit.coordinate.latitude,
+            longitude: visit.coordinate.longitude,
+            placeName: nil,
+            address: nil
+        )
         reverseGeocode(record: record, container: container)
+    }
+
+    private func pingWebhook(event: String, latitude: Double, longitude: Double, placeName: String?, address: String?) {
+        let urlString = webhookURL
+        guard !urlString.isEmpty, let url = URL(string: urlString) else { return }
+
+        var payload: [String: Any] = [
+            "event": event,
+            "latitude": latitude,
+            "longitude": longitude,
+            "timestamp": ISO8601DateFormatter().string(from: Date())
+        ]
+        if let placeName { payload["place_name"] = placeName }
+        if let address { payload["address"] = address }
+
+        guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let token = webhookBearerToken
+        if !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = body
+
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            let timestamp = ISO8601DateFormatter().string(from: Date())
+            if let error {
+                LocationManager.appendWebhookLog("[\(timestamp)] [\(event)] FAILED — \(error.localizedDescription) → \(urlString)")
+            } else if let http = response as? HTTPURLResponse {
+                let status = (200...299).contains(http.statusCode) ? "OK \(http.statusCode)" : "ERROR \(http.statusCode)"
+                LocationManager.appendWebhookLog("[\(timestamp)] [\(event)] \(status) → \(urlString)")
+            }
+        }.resume()
+    }
+
+    nonisolated static var webhookLogURL: URL? {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("webhook_log.txt")
+    }
+
+    private nonisolated static func appendWebhookLog(_ line: String) {
+        guard let fileURL = webhookLogURL else { return }
+        let entry = (line + "\n").data(using: .utf8) ?? Data()
+        if FileManager.default.fileExists(atPath: fileURL.path) {
+            if let handle = try? FileHandle(forWritingTo: fileURL) {
+                handle.seekToEndOfFile()
+                handle.write(entry)
+                try? handle.close()
+            }
+        } else {
+            try? entry.write(to: fileURL, options: .atomic)
+        }
     }
 
     private func closeOpenVisits(before date: Date, in context: ModelContext) {

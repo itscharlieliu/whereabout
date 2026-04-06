@@ -14,6 +14,8 @@ struct ContentView: View {
     @State private var importMessage: String?
     @State private var showImportAlert = false
     @State private var showDeleteConfirmation = false
+    @State private var webhookURLText = ""
+    @State private var webhookBearerTokenText = ""
 
     private var today: Date { Calendar.current.startOfDay(for: Date()) }
     private var selectedDate: Date { scrolledDate ?? today }
@@ -301,6 +303,41 @@ struct ContentView: View {
                 }
 
                 Section {
+                    TextField("https://", text: $webhookURLText)
+                        .keyboardType(.URL)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .onChange(of: webhookURLText) { _, newValue in
+                            locationManager.webhookURL = newValue
+                        }
+
+                    if !webhookURLText.isEmpty {
+                        SecureField("Bearer token (optional)", text: $webhookBearerTokenText)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                            .onChange(of: webhookBearerTokenText) { _, newValue in
+                                locationManager.webhookBearerToken = newValue
+                            }
+                    }
+
+                    Button {
+                        if let url = LocationManager.webhookLogURL,
+                           FileManager.default.fileExists(atPath: url.path) {
+                            exportItem = ExportURL(url: url)
+                        } else {
+                            importMessage = "No webhook logs yet."
+                            showImportAlert = true
+                        }
+                    } label: {
+                        Label("Export Webhook Logs", systemImage: "list.bullet.rectangle")
+                    }
+                } header: {
+                    Text("Webhook")
+                } footer: {
+                    Text("When set, Whereabout will POST a JSON payload to this URL whenever you arrive at or depart from a location.")
+                }
+
+                Section {
                     HStack {
                         Text("Version")
                         Spacer()
@@ -312,6 +349,10 @@ struct ContentView: View {
                 } footer: {
                     Text("Whereabout tracks your location throughout the day so you can revisit where you've been. All data stays on your device.")
                 }
+            }
+            .onAppear {
+                webhookURLText = locationManager.webhookURL
+                webhookBearerTokenText = locationManager.webhookBearerToken
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
