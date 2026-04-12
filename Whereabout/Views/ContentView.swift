@@ -341,7 +341,7 @@ struct ContentView: View {
                     HStack {
                         Text("Version")
                         Spacer()
-                        Text("1.1")
+                        Text("1.2")
                             .foregroundStyle(.secondary)
                     }
                 } header: {
