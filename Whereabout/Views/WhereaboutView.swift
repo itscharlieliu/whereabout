@@ -7,7 +7,6 @@ struct WhereaboutView: View {
 
     @Query private var currDayLocations: [LocationRecord]
     @Query private var currDayVisits: [VisitRecord]
-    @Query private var priorLocations: [LocationRecord]
     @Query private var priorVisits: [VisitRecord]
 
     @State private var selectedVisit: VisitRecord?
@@ -35,13 +34,6 @@ struct WhereaboutView: View {
             sort: \.arrivalDate
         )
 
-        var priorLocationsDescriptor = FetchDescriptor<LocationRecord>(
-            predicate: #Predicate { $0.timestamp < startOfDay },
-            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-        )
-        priorLocationsDescriptor.fetchLimit = 1
-        _priorLocations = Query(priorLocationsDescriptor)
-
         var priorVisitsDescriptor = FetchDescriptor<VisitRecord>(
             predicate: #Predicate { $0.arrivalDate < startOfDay },
             sortBy: [SortDescriptor(\.arrivalDate, order: .reverse)]
@@ -51,7 +43,7 @@ struct WhereaboutView: View {
     }
     
     private var dayLocations: [LocationRecord] {
-        [priorLocations.first].compactMap { $0 } + currDayLocations
+        currDayLocations
     }
     
     private var dayVisits: [VisitRecord] {
