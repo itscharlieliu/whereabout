@@ -11,6 +11,18 @@ struct WhereaboutView: View {
 
     @State private var selectedVisit: VisitRecord?
 
+    // iPhone Duo: the outer display reports compact width (like any iPhone),
+    // while the unfolded inner display reports regular width in both
+    // orientations, like an iPad. Layout is driven by size class, never by
+    // device, idiom, orientation, or screen size — the inner display ignores
+    // supportedInterfaceOrientations, and the same window can shrink to a
+    // compact pane in Split View. A nil size class falls back to compact.
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    /// True on the Duo inner display (and on full-screen iPad).
+    private var isRegularWidth: Bool { horizontalSizeClass == .regular }
+
     init(selectedDate: Date) {
         self.selectedDate = selectedDate
 
@@ -59,10 +71,22 @@ struct WhereaboutView: View {
     }
 
     var body: some View {
+        if isRegularWidth {
+            regularLayout
+        } else {
+            compactLayout
+        }
+    }
+
+    // MARK: - Layouts
+
+    /// Stacked layout for the Duo outer display and ordinary iPhones.
+    private var compactLayout: some View {
         VStack(spacing: 0) {
-            // Map
-            WhereaboutMapView(dayData: dayData, selectedVisit: selectedVisit)
-                .frame(height: 300)
+            // Map. Shorter in compact height (e.g. Duo folded landscape,
+            // 678 x 466 pt) so the timeline below still gets room.
+            mapView
+                .frame(height: verticalSizeClass == .compact ? 180 : 300)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal)
                 .padding(.top, 8)
@@ -75,6 +99,43 @@ struct WhereaboutView: View {
             Divider()
 
             // Timeline
+            timelineContent
+        }
+    }
+
+    /// Side-by-side layout for the Duo inner display (669 x 951 pt portrait,
+    /// 951 x 669 pt landscape, regular in both) and full-screen iPad.
+    /// The map and timeline share the window instead of the map hogging
+    /// the top third and the timeline scrolling underneath it, and tapping
+    /// a visit in the right pane still recentres the map in the left pane.
+    private var regularLayout: some View {
+        HStack(spacing: 0) {
+            mapView
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .padding(12)
+
+            Divider()
+
+            VStack(spacing: 0) {
+                statsBar
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
+
+                Divider()
+
+                timelineContent
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var mapView: some View {
+        WhereaboutMapView(dayData: dayData, selectedVisit: selectedVisit)
+    }
+
+    private var timelineContent: some View {
+        Group {
             if dayData.isEmpty {
                 emptyState
             } else {
