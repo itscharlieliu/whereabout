@@ -62,12 +62,22 @@ Whereabout/
 
 For a deeper walkthrough, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
+## iPhone Duo
+
+Whereabout adapts by size class, not by device or orientation:
+
+- **Folded (outer display, 466 × 678 pt, compact width):** the usual stacked layout — map on top, stats, then the timeline.
+- **Unfolded (inner display, 669 × 951 pt, regular width in both orientations):** a side-by-side layout — map on the left, stats and timeline on the right. Tapping a visit still recentres the map.
+- **Folded landscape (compact height):** the map shrinks from 300 pt to 180 pt so the timeline still gets room.
+
+The inner display ignores `supportedInterfaceOrientations`, and the same window can shrink to a compact pane in Split View, so no layout decision in the app checks device, idiom, orientation, or screen size. Navigation and toolbar items use SwiftUI `.toolbar` inside a `NavigationStack`, so the system can move them to the vertical bar on the inner display. To get the full edge-to-edge inner display, build with the iOS 27.1 SDK (Xcode 27.1+); the deployment target stays iOS 26.
+
 ## Development
 
 ### Requirements
 
-- Xcode 15.4+
-- iOS 17+
+- Xcode 27.1+ for full iPhone Duo inner-display support
+- iOS 26+ (the project's deployment target)
 - Location permissions enabled (Always permission is best for background tracking)
 
 ### Build

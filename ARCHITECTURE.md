@@ -144,11 +144,17 @@ Receives `selectedDate` and immediately constructs two `@Query` instances scoped
 // VisitRecord:    arrivalDate < endOfDay AND departureDate >= startOfDay
 ```
 
-**Layout (top to bottom):**
+**Layout** — driven by horizontal size class, never by device, idiom,
+orientation, or screen size (see README, "iPhone Duo"):
 
-1. **Map** (`WhereaboutMapView`) — 300 pt tall, rounded corners.
-2. **Stats bar** — three `StatBadge` tiles: distance walked, number of places, number of GPS points.
-3. **Timeline list** or **empty state**.
+- **Compact width** (ordinary iPhones, Duo outer display): top to bottom —
+  1. **Map** (`WhereaboutMapView`) — 300 pt tall (180 pt in compact height,
+     e.g. Duo folded landscape), rounded corners.
+  2. **Stats bar** — three `StatBadge` tiles: distance walked, number of places, number of GPS points.
+  3. **Timeline list** or **empty state**.
+- **Regular width** (Duo inner display, full-screen iPad): side by side —
+  map on the left, stats bar + timeline on the right. Tapping a timeline
+  visit still recentres the map, via the shared `selectedVisit` state.
 
 **Timeline logic:**
 
